@@ -1,0 +1,195 @@
+---
+title: "tubes komstat"
+author: "123450083_Nadya Ratu Anjani"
+date: "2025-11-17"
+output: html_document
+---
+
+```{r}
+#membaca dataset
+library(readxl)
+banjir <- read_excel("D:/semester 5/Komputasi Statistik/Dataset banjir.xlsx")
+
+#melihat struktur dataset
+str(banjir)
+head(banjir)
+```
+
+
+```{r}
+#percabangan
+#klasifikasi tingkat curah hujan
+banjir$Tingkat_Hujan <- ifelse(banjir$`Jumlah Curah Hujan (mm)` > 50,
+                              "Tinggi",
+                              ifelse(banjir$`Jumlah Curah Hujan (mm)` > 20,
+                                     "Sedang",
+                                     "Rendah"))
+
+#klasifikasi tingkat kelembapan
+banjir$Tingkat_Kelembapan <- ifelse(banjir$`Rata-Rata Kelembapan (%)` > 85,
+                                   "Lembab",
+                                   "Normal")
+
+#menampilkan hasil klasifikasi
+head(banjir[, c("Tanggal Banjir", "Jumlah Curah Hujan (mm)", "Tingkat_Hujan", 
+                "Rata-Rata Kelembapan (%)", "Tingkat_Kelembapan")])
+```
+
+```{r}
+#perulangan for
+#mencari curah hujan maksimum menggunakan for loop
+curah_hujan <- banjir$`Jumlah Curah Hujan (mm)`
+n <- length(curah_hujan)
+maksimum <- curah_hujan[1]
+
+for(i in 2:n){
+  if(curah_hujan[i] > maksimum){
+    maksimum <- curah_hujan[i]
+  }
+}
+
+cat("Curah hujan maksimum:", maksimum, "mm\n")
+```
+
+```{r}
+#perulangan while
+#mencari hari pertama dengan curah hujan > 100 mm
+index <- 1
+found <- FALSE
+
+while(index <= n & !found){
+  if(curah_hujan[index] > 100){
+    found <- TRUE
+    tanggal_tinggi <- banjir$`Tanggal Banjir`[index]
+    cat("Hari pertama dengan curah hujan > 100 mm:", tanggal_tinggi, "\n")
+  }
+  index <- index + 1
+}
+```
+
+```{r}
+#sorting data
+#mengurutkan data berdasarkan curah hujan (ascending)
+for(i in 1:(n-1)){
+  for(j in (i+1):n){
+    if(curah_hujan[i] > curah_hujan[j]){
+      # Tukar nilai
+      temp <- curah_hujan[i]
+      curah_hujan[i] <- curah_hujan[j]
+      curah_hujan[j] <- temp
+    }
+  }
+}
+
+#menampilkan 5 nilai curah hujan terendah dan tertinggi
+cat("5 Curah hujan terendah:", head(curah_hujan, 5), "\n")
+cat("5 Curah hujan tertinggi:", tail(curah_hujan, 5), "\n")
+```
+
+```{r}
+#analisis banjir
+#menghitung statistik menggunakan loop
+total_banjir <- 0
+total_hujan_banjir <- 0
+total_hujan_tidak_banjir <- 0
+count_banjir <- 0
+count_tidak_banjir <- 0
+
+for(i in 1:n){
+  if(banjir$`Terjadi Banjir (1=Ya, 0=Tidak)`[i] == 1){
+    total_banjir <- total_banjir + 1
+    total_hujan_banjir <- total_hujan_banjir + banjir$`Jumlah Curah Hujan (mm)`[i]
+    count_banjir <- count_banjir + 1
+  } else {
+    total_hujan_tidak_banjir <- total_hujan_tidak_banjir + banjir$`Jumlah Curah Hujan (mm)`[i]
+    count_tidak_banjir <- count_tidak_banjir + 1
+  }
+}
+
+```
+
+```{r}
+#menghitung rata-rata
+rata_banjir <- total_hujan_banjir / count_banjir
+rata_tidak_banjir <- total_hujan_tidak_banjir / count_tidak_banjir
+
+cat("Total kejadian banjir:", total_banjir, "dari", n, "hari\n")
+cat("Rata-rata curah hujan saat banjir:", round(rata_banjir, 2), "mm\n")
+cat("Rata-rata curah hujan saat tidak banjir:", round(rata_tidak_banjir, 2), "mm\n")
+```
+
+```{r}
+#repeat loop
+#mencari kejadian banjir pertama dengan menggunakan repeat
+i <- 1
+repeat {
+  if(banjir$`Terjadi Banjir (1=Ya, 0=Tidak)`[i] == 1) {
+    cat("Kejadian banjir pertama terjadi pada:", banjir$`Tanggal Banjir`[i], "\n")
+    cat("Dengan curah hujan:", banjir$`Jumlah Curah Hujan (mm)`[i], "mm\n")
+    break
+  }
+  i <- i + 1
+  if(i > n) {
+    cat("Tidak ditemukan kejadian banjir\n")
+    break
+  }
+}
+```
+
+```{r}
+#histogram
+# Visualisasi perbandingan curah hujan banjir vs tidak banjir
+library(ggplot2)
+
+ggplot(banjir, aes(x = `Jumlah Curah Hujan (mm)`, fill = factor(`Terjadi Banjir (1=Ya, 0=Tidak)`))) +
+  geom_histogram(position = "dodge", alpha = 0.7, bins = 15) +
+  labs(title = "Distribusi Curah Hujan: Banjir vs Tidak Banjir",
+       x = "Curah Hujan (mm)",
+       y = "Frekuensi",
+       fill = "Status Banjir") +
+  scale_fill_manual(values = c("0" = "skyblue", "1" = "maroon"),
+                    labels = c("Tidak Banjir", "Banjir")) +
+  theme_minimal()
+```
+
+```{r}
+#barplot
+# Ringkasan statistik untuk visualisasi
+summary_data <- data.frame(
+  Kategori = c("Banjir", "Tidak Banjir"),
+  Rata_Rata = c(rata_banjir, rata_tidak_banjir),
+  Jumlah_Kejadian = c(count_banjir, count_tidak_banjir)
+)
+
+# Bar plot perbandingan rata-rata
+ggplot(summary_data, aes(x = Kategori, y = Rata_Rata, fill = Kategori)) +
+  geom_bar(stat = "identity", alpha = 0.8) +
+  geom_text(aes(label = paste(round(Rata_Rata, 1), "mm")), 
+            vjust = -0.5, size = 5) +
+  labs(title = "Perbandingan Rata-Rata Curah Hujan",
+       subtitle = "Hari dengan Banjir vs Tidak Banjir",
+       x = "Kategori",
+       y = "Rata-Rata Curah Hujan (mm)") +
+  scale_fill_manual(values = c("Banjir" = "maroon", "Tidak Banjir" = "lightblue")) +
+  theme_minimal()
+```
+
+```{r}
+#pie chart
+# Pie chart proporsi kejadian banjir
+pie_data <- data.frame(
+  Status = c("Banjir", "Tidak Banjir"),
+  Count = c(count_banjir, count_tidak_banjir)
+)
+
+ggplot(pie_data, aes(x = "", y = Count, fill = Status)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  geom_text(aes(label = paste0(Count, " kejadian\n(", 
+                              round(Count/sum(Count)*100, 1), "%)")),
+            position = position_stack(vjust = 0.5)) +
+  labs(title = "Distribusi Kejadian Banjir") +
+  scale_fill_manual(values = c("Banjir" = "lavender", "Tidak Banjir" = "lightblue")) +
+  theme_void()
+```
+
